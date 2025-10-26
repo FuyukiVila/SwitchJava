@@ -66,10 +66,10 @@ Java Repository: $javaRepo
                 if (Test-Path $javaExe) {
                     $relativePath = "$($vendor.Name)/$($ver.Name)"
                     $versions += [PSCustomObject]@{
-                        Path = $relativePath
+                        Path     = $relativePath
                         FullPath = $ver.FullName
-                        Vendor = $vendor.Name
-                        Version = $ver.Name
+                        Vendor   = $vendor.Name
+                        Version  = $ver.Name
                     }
                 }
             }
@@ -104,7 +104,8 @@ Java Repository: $javaRepo
                 Write-Host "`nVersion details:"
                 $javaVersion | Select-Object -First 3 | ForEach-Object { Write-Host "  $_" }
             }
-        } else {
+        }
+        else {
             Write-Host "No default Java version set." -ForegroundColor Yellow
         }
     }
@@ -184,7 +185,8 @@ Java Repository: $javaRepo
         if (Test-Path $defaultLink) {
             Remove-Item $defaultLink -Force -Recurse
             Write-Host "Default Java version unset." -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "No default Java version is currently set." -ForegroundColor Yellow
         }
     }
@@ -244,10 +246,11 @@ Java Repository: $javaRepo
         # 检查是否已存在
         $pathEntries = $currentPath -split ";" | Where-Object { $_ }
         $needsUpdate = $true
+        $javaBinPath = Join-Path $javaRepo "default\bin"
 
-        # 检查是否已经包含 default\bin 或 %JAVA_HOME%\bin
+        # 检查是否已经包含 Java bin 目录
         foreach ($entry in $pathEntries) {
-            if ($entry -like "*default\bin*" -or $entry -like "*%JAVA_HOME%\bin*") {
+            if ($entry -eq $javaBinPath) {
                 Write-Host "  PATH already contains Java bin directory: $entry" -ForegroundColor Yellow
                 $needsUpdate = $false
                 break
@@ -255,18 +258,19 @@ Java Repository: $javaRepo
         }
 
         if ($needsUpdate) {
-            # 添加 %JAVA_HOME%\bin 到 PATH 开头
-            $newPath = "%JAVA_HOME%\bin;$currentPath"
+            # 添加绝对路径到 PATH 开头
+            $newPath = "$javaBinPath;$currentPath"
 
             try {
                 [Environment]::SetEnvironmentVariable("PATH", $newPath, $scope)
-                Write-Host "  ✓ Added %JAVA_HOME%\bin to PATH" -ForegroundColor Green
+                Write-Host "  ✓ Added $javaBinPath to PATH" -ForegroundColor Green
             }
             catch {
                 Write-Error "  ✗ Failed to update PATH: $($_.Exception.Message)"
                 return
             }
-        } else {
+        }
+        else {
             Write-Host "  ✓ PATH already configured" -ForegroundColor Green
         }
 
@@ -285,10 +289,10 @@ Java Repository: $javaRepo
             $cleanup = Read-Host "`n  Remove these paths? (y/n)"
             if ($cleanup -eq "y") {
                 $cleanedPath = ($pathEntries | Where-Object {
-                    $_ -notmatch "java|jdk|jre" -or
-                    $_ -like "*%JAVA_HOME%*" -or
-                    $_ -like "*default\bin*"
-                }) -join ";"
+                        $_ -notmatch "java|jdk|jre" -or
+                        $_ -like "*%JAVA_HOME%*" -or
+                        $_ -like "*default\bin*"
+                    }) -join ";"
 
                 try {
                     [Environment]::SetEnvironmentVariable("PATH", $cleanedPath, $scope)
@@ -298,7 +302,8 @@ Java Repository: $javaRepo
                     Write-Warning "  ✗ Failed to clean up PATH: $($_.Exception.Message)"
                 }
             }
-        } else {
+        }
+        else {
             Write-Host "  ✓ No old Java paths found" -ForegroundColor Green
         }
 
@@ -306,14 +311,16 @@ Java Repository: $javaRepo
         Write-Host "`n=== Configuration Summary ===" -ForegroundColor Cyan
         Write-Host "Scope:        $scope"
         Write-Host "JAVA_HOME:    $javaHome"
-        Write-Host "PATH Entry:   %JAVA_HOME%\bin"
+        $javaBinPath = Join-Path $javaRepo "default\bin"
+        Write-Host "PATH Entry:   $javaBinPath"
 
         # 检查当前是否有默认版本
         $current = Get-CurrentVersion
         if ($current) {
             Write-Host "Current Java: " -NoNewline
             Write-Host $current -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "`nNote: " -NoNewline -ForegroundColor Yellow
             Write-Host "No default Java version set. Use 'Switch-Java set <VERSION>' to set one."
         }
@@ -338,7 +345,8 @@ Java Repository: $javaRepo
                 Write-Error "Please specify a Java version."
                 Write-Host "Usage: Switch-Java set <VERSION>"
                 Write-Host "Example: Switch-Java set Corretto/11"
-            } else {
+            }
+            else {
                 Set-JavaVersion -TargetVersion $Version
             }
         }
